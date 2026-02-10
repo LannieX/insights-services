@@ -1,0 +1,102 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  fullName  String
+  image     String?
+  email     String   @unique
+  phone     String?
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  address   String?
+  region    Region
+  isActive  Boolean  @default(true)
+  sales     Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Region {
+  NA
+  EU
+  APAC
+}
+
+model Product {
+  id        String              @id @default(uuid())
+  code      String
+  name      String
+  price     Float
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  sales     Order[]
+  inventory WarehouseStock[]
+}
+
+model Order {
+  id         String   @id @default(uuid())
+  orderNumber String @unique
+  productId  String
+  customerId String
+  totalPrice Float
+  quantity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id])
+}
+
+model WarehouseStock {
+  id        String   @id @default(uuid())
+  productId String
+  remaining    Int
+  status    Status   @default(OK)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+enum Status {
+  OK
+  LOW
+  OUT
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  action      String
+  description String
+  createdAt   DateTime @default(now())
+}
+
+model FunnelWeekly {
+  id           String   @id @default(uuid())
+  weekStart    DateTime
+  visitors     Int
+  productViews Int
+  addToCart    Int
+  purchases    Int
+}
