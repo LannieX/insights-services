@@ -9,7 +9,6 @@ import { Roles, RolesGuard } from './roles.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
   @Post('signup')
   signup(@Body() createAuthDto: CreateAuthDto) {

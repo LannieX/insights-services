@@ -282,7 +282,7 @@ export class OverviewService {
 
     const bestRegion = [...regionalData].sort((a, b) => b.growth - a.growth)[0];
 
-    const summaryText = bestRegion
+    const summaryTextRegion = bestRegion
       ? `${bestRegion.name} showing strongest growth this quarter.`
       : 'No sales data available for regional comparison.';
 
@@ -292,12 +292,12 @@ export class OverviewService {
         value: item.value,
         growth: item.growth,
       })),
-      summary: summaryText,
+      summary: summaryTextRegion,
       totalGrowth: overallRegionGrowth,
       totalSales: Math.round(globalCurrentSales),
     };
 
-    const currentFunnelStats = await this.prisma.funnelWeekly.aggregate({
+const currentFunnelStats = await this.prisma.funnelWeekly.aggregate({
       _sum: {
         visitors: true,
         productViews: true,
@@ -313,6 +313,7 @@ export class OverviewService {
       _sum: {
         visitors: true,
         purchases: true, 
+        addToCart: true, 
       },
       where: {
         weekStart: { gte: lastMonth.start, lte: lastMonth.end },
@@ -323,14 +324,25 @@ export class OverviewService {
     const views = currentFunnelStats._sum.productViews || 0;
     const addToCart = currentFunnelStats._sum.addToCart || 0;
     const purchases = currentFunnelStats._sum.purchases || 0;
-
     const currentConv = visitors > 0 ? (purchases / visitors) * 100 : 0;
 
     const lastVisitors = lastFunnelStats._sum.visitors || 0;
     const lastPurchases = lastFunnelStats._sum.purchases || 0;
+    const lastAddToCart = lastFunnelStats._sum.addToCart || 0;
     const lastConv = lastVisitors > 0 ? (lastPurchases / lastVisitors) * 100 : 0;
 
-    const conversionChange = this.calculateGrowth(currentConv, lastConv);
+    const overallConversionGrowth = this.calculateGrowth(currentConv, lastConv);
+
+    const currentCartToPurchaseRate = addToCart > 0 ? (purchases / addToCart) * 100 : 0;
+    const lastCartToPurchaseRate = lastAddToCart > 0 ? (lastPurchases / lastAddToCart) * 100 : 0;
+
+    const diff = currentCartToPurchaseRate - lastCartToPurchaseRate;
+    const absDiff = Math.abs(diff).toFixed(1); 
+    const direction = diff >= 0 ? 'increased' : 'decreased';
+
+    const summaryTextFunnel = lastAddToCart > 0 
+      ? `Checkout to purchase conversion ${direction} by ${absDiff}%`
+      : `Current checkout to purchase conversion is ${currentCartToPurchaseRate.toFixed(1)}%`;
 
     const funnel = {
       data: [
@@ -339,7 +351,8 @@ export class OverviewService {
         { step: 'ADD TO CART', value: addToCart },
         { step: 'PURCHASE', value: purchases },
       ],
-      conversionChange: conversionChange,
+      totalGrowth: overallConversionGrowth,
+      summary: summaryTextFunnel,
     };
 
     return {

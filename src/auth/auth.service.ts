@@ -88,7 +88,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid username or password');
     }
 
-    const {password: removePassword, role, isActive, createdAt, updatedAt, ...items} = user;
+    const {password: removePassword, isActive, createdAt, updatedAt, ...items} = user;
 
     const generateToken = await this.generateToken(user.id, user.role);
 
